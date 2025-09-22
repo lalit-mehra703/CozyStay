@@ -5,6 +5,8 @@ const Listing = require('./models/listing.js');
 const path = require('path');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate')
+const wrapAsync = require('./utils/wrapAsyn.js')
+const ExpressError = require('./utils/ExpressError.js')
 
 const port = 8080;
 
@@ -53,13 +55,12 @@ app.get('/listings/:id',async(req,res)=>{
 })
 
 // Create Route 
-app.post('/listings',async (req,res)=>{
-    // let {title,description,image,price,country,location} = req.body;
-    const newListing = new Listing(req.body.listing);
-    await newListing.save();
-    res.redirect('/listings');
-    
-})
+app.post('/listings',wrapAsync(async (req,res,next)=>{
+        // let {title,description,image,price,country,location} = req.body;
+        const newListing = new Listing(req.body.listing);
+        await newListing.save();
+        res.redirect('/listings');
+}));
 
 // Edit Route 
 app.get('/listings/:id/edit',async(req,res)=>{
@@ -95,6 +96,11 @@ app.delete('/listings/:id',async (req,res)=>{
 //     console.log("sample was saved");
 //     res.send("succesfully saved")
 // });
+
+app.use((err,req,res,next)=>{
+    let {statusCode,message} = err;
+    res.atatus(statusCode).send(message);
+})
 
 app.listen(port,()=>{
     console.log(`server is listening to port ${port}`);
